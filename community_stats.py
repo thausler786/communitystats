@@ -1,3 +1,4 @@
+import dateutil.parser
 import requests
 import sys
 import json
@@ -28,9 +29,40 @@ def fetch_issue_events(owner, repo, interval, range):
     map(get_events, issue_array)
 
 def get_events(issue):
+
     print issue['created_at']
 
 
 
 fetch_issue_events(owner, repo, interval, range)
+
+start_date = dateutil.parser.parse('2015-08-27T20:45:56Z') + relativedelta(weekday=SU(-1))
+print start_date
+
+
+class IssueEvents:
+    issue_opened
+    issue_closed
+
+class CommunityWeekFinder:
+    start_date
+    end_date
+
+    def __init__(self, start_date, end_date):
+        super()
+
+class CommunityWeek:
+    issues_opened
+    issues_closed
+    start_date
+    end_date
+
+    def __init__(self, start_date):
+        start_date = start_date
+        end_date = start_date + relativedelta(weeks=+1)
+        issues_opened = 0
+        issues_closed = 0
+
+
+
 
