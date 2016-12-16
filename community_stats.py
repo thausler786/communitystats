@@ -1,4 +1,5 @@
-import dateutil.parser
+from dateutil.relativedelta import *
+from dateutil.parser import *
 import requests
 import sys
 import json
@@ -8,6 +9,41 @@ owner = sys.argv[1]
 repo = sys.argv[2]
 interval = 7
 range = 30
+
+
+class IssueEvents:
+    issue_opened = 0
+    issue_closed = 0
+
+    def __init__(self, issue_opened, issue_closed):
+        self.issue_opened = issue_opened
+        self.issue_closed = issue_closed
+
+class CommunityWeekFinder:
+    start_date = 0
+    end_date = 0
+    
+    def __init__(self, start_date, end_date):
+        start_date = start_date 
+        
+    def get_week(date):
+        return date
+
+class CommunityWeek:
+    issues_opened = 0
+    issues_closed = 0
+    start_date = 0
+    end_date = 0
+
+    def __init__(self, start_date):
+        self.start_date = start_date
+        end_date = start_date + parser.relativedelta(weeks=+1)
+        issues_opened = 0
+        issues_closed = 0
+
+    def contains_date(date):
+        return date >= start_date and date < end_date
+
 
 def github_creds():
     requests.auth.HTTPBasicAuth(os.environ['COMM_USER'], os.environ['COMM_PASSWORD'])
@@ -29,40 +65,16 @@ def fetch_issue_events(owner, repo, interval, range):
     map(get_events, issue_array)
 
 def get_events(issue):
-
-    print issue['created_at']
+    events = IssueEvents(issue['created_at'], issue['closed_at'])
+    print events
+    return events
 
 
 
 fetch_issue_events(owner, repo, interval, range)
 
-start_date = dateutil.parser.parse('2015-08-27T20:45:56Z') + relativedelta(weekday=SU(-1))
-print start_date
+end_date = parse('2016-12-15T02:44:41Z') + relativedelta(weekday=SA(+1))
+start_date = parse('2015-08-27T20:45:56Z') + relativedelta(weekday=SU(-1))
 
-
-class IssueEvents:
-    issue_opened
-    issue_closed
-
-class CommunityWeekFinder:
-    start_date
-    end_date
-
-    def __init__(self, start_date, end_date):
-        super()
-
-class CommunityWeek:
-    issues_opened
-    issues_closed
-    start_date
-    end_date
-
-    def __init__(self, start_date):
-        start_date = start_date
-        end_date = start_date + relativedelta(weeks=+1)
-        issues_opened = 0
-        issues_closed = 0
-
-
-
+CommunityWeekFinder(start_date, end_date)
 
