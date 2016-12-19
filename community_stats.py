@@ -69,11 +69,21 @@ def get_events(issue):
     print events
     return events
 
+def get_date_for_day(date_string):
+    raw_date = parse(date_string)
+    day_date = datetime(year=raw_date.year,
+                        month=raw_date.month,
+                        day=raw_date.day,
+                        hour=0,
+                        minute=0,
+                        second=0)
+    return day_date
 
 
 fetch_issue_events(owner, repo, interval, range)
 
-end_date = parse('2016-12-15T02:44:41Z') + relativedelta(weekday=SA(+1))
+end_date = get_date_for_day('2016-12-15T02:44:41Z') + relativedelta(weekday=SA(+1))
+
 start_date = parse('2015-08-27T20:45:56Z') + relativedelta(weekday=SU(-1))
 
 CommunityWeekFinder(start_date, end_date)
