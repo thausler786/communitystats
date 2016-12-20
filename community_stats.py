@@ -1,5 +1,6 @@
 from dateutil.relativedelta import *
 from dateutil.parser import *
+import datetime
 import requests
 import sys
 import json
@@ -22,12 +23,23 @@ class IssueEvents:
 class CommunityWeekFinder:
     start_date = 0
     end_date = 0
-    
+    community_week_dict = {}
+
     def __init__(self, start_date, end_date):
-        start_date = start_date 
-        
+        self.start_date = start_date
+        self.end_date = end_date
+        week_start_date = start_date
+        while week_start_date < end_date:
+            self.community_week_dict[week_start_date] = CommunityWeek(start_date)
+
     def get_week(date):
         return date
+
+    def add_event(issue_event):
+        opened_week_key = get_sunday_before_day(issue_event.issue_opened)
+        community_week_dict[opened_week_key].issues_opened += 1
+        closed_week_key = get_sunday_before_day(issue_event.issue_closed)
+        community_week_dict[closed_week_key].issues_opened += 1
 
 class CommunityWeek:
     issues_opened = 0
@@ -37,7 +49,7 @@ class CommunityWeek:
 
     def __init__(self, start_date):
         self.start_date = start_date
-        end_date = start_date + parser.relativedelta(weeks=+1)
+        end_date = start_date + relativedelta(weeks=+1)
         issues_opened = 0
         issues_closed = 0
 
@@ -56,35 +68,41 @@ def fetch_issue_events(owner, repo, interval, range):
     issue_array = json.loads(req.text)
     while ('next' in req.links and 'url' in req.links['next']):
         print req.links['next']['url']
-        #print req.text
         req = requests.get(req.links['next']['url'], auth=github_creds())
         issue_array += json.loads(req.text)
         print req.links
         if not ('next' in req.links and 'url' in req.links['next']):
             break
-    map(get_events, issue_array)
+    return map(get_events, issue_array)
 
 def get_events(issue):
-    events = IssueEvents(issue['created_at'], issue['closed_at'])
+    events = IssueEvents(get_day_for_date(issue['created_at']), get_day_for_date(issue['closed_at']))
     print events
     return events
 
-def get_date_for_day(date_string):
+def get_sunday_before_day(day):
+    return day + relativedelta(weekday=SU(-1))
+
+def get_day_for_date(date_string):
+    if date_string is None:
+        return None
     raw_date = parse(date_string)
-    day_date = datetime(year=raw_date.year,
+    day = datetime.date(year=raw_date.year,
                         month=raw_date.month,
-                        day=raw_date.day,
-                        hour=0,
-                        minute=0,
-                        second=0)
-    return day_date
+                        day=raw_date.day)
+    return day
 
 
-fetch_issue_events(owner, repo, interval, range)
+events = fetch_issue_events(owner, repo, interval, range)
 
-end_date = get_date_for_day('2016-12-15T02:44:41Z') + relativedelta(weekday=SA(+1))
+end_date = get_day_for_date('2016-12-15T02:44:41Z') + relativedelta(weekday=SA(+1))
 
-start_date = parse('2015-08-27T20:45:56Z') + relativedelta(weekday=SU(-1))
+start_date = get_day_for_date('2015-08-27T20:45:56Z') + relativedelta(weekday=SU(-1))
 
-CommunityWeekFinder(start_date, end_date)
+week_finder = CommunityWeekFinder(start_date, end_date)
+
+map(week_finder.add_event, events)
+
+for week in week_finder.community_week_dict.values:
+    print week
 
