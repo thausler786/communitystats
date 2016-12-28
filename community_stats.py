@@ -110,3 +110,21 @@ map(week_finder.add_event, events)
 for week in sorted(week_finder.community_week_dict.values(), key=get_date):
     print "Week " + str(week.start_date) + " had issues opened: " + str(week.issues_opened) + ", issues closed: " + str(week.issues_closed)
 
+velocities = open('point_velocities.csv', 'w')
+velocities.truncate()
+
+burnup = open('burnup.csv', 'w')
+
+week_index = 0
+total_opened = 0
+total_closed = 0
+difference = 0
+velocities.write('week,opened,closed\n')
+burnup.write('week,opened,closed\n')
+for week in sorted(week_finder.community_week_dict.values(), key=get_date):
+    total_opened += week.issues_opened
+    total_closed += week.issues_closed
+    difference = total_opened - total_closed
+    velocities.write(str(week_index) + ',' + str(week.issues_opened) + ','+ str(week.issues_closed) + '\n')
+    burnup.write(str(week_index) + ',' + str(difference) + '\n')#str(total_opened) + ','+ str(total_closed) + '\n')
+    week_index += 1
