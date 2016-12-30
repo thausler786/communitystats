@@ -27,9 +27,11 @@ class CommunityWeekFinder:
         self.start_date = start_date
         self.end_date = end_date
         week_start_date = start_date
+        week_index = 0
         while week_start_date < end_date:
-            self.community_week_dict[week_start_date] = CommunityWeek(week_start_date)
+            self.community_week_dict[week_start_date] = CommunityWeek(week_start_date, week_index)
             week_start_date = week_start_date + relativedelta(weeks=+1)
+            week_index += 1
 
     def get_week(date):
         return date
@@ -47,11 +49,17 @@ class CommunityWeekFinder:
     def add_latencies(self, issue_event):
         opened_week_key = get_sunday_before_day(issue_event.issue_opened)
         closed_week_key = get_sunday_before_day(issue_event.issue_closed) or datetime.datetime.max
+        opened_week_index = self.community_week_dict[opened_week_key].week_index
+
+
         if opened_week_key:
             week_key = opened_week_key
             while (self.community_week_dict[week_key] and week_key <= closed_week_key):
-                self.community_week_dict[week_key].issues_open += 1
-                self.community_week_dict[week_key].total_time_open += week_key - get_sunday_before_day(issue_event.issue_opened)
+                current_week = self.community_week_dict[week_key]
+                current_week.issues_open += 1
+                current_week.total_weeks_open += current_week.week_index - opened_week_index
+
+                week_key = week_key + datetime.timedelta(days=+7)
 
 class CommunityWeek:
     issues_opened = 0
@@ -60,21 +68,24 @@ class CommunityWeek:
     end_date = 0
 
     issues_open = 0
-    total_time_open = 0
+    total_weeks_open = 0
 
-    def __init__(self, start_date):
+    week_index = 0
+
+    def __init__(self, start_date, week_index):
         self.start_date = start_date
         end_date = start_date + relativedelta(weeks=+1)
         issues_opened = 0
         issues_closed = 0
         issues_open = 0
-        total_time_open = 0
+        total_weeks_open = 0
+        self.week_index = week_index
 
     def contains_date(date):
         return date >= start_date and date < end_date
 
     def average_issue_age():
-        return issues_open / total_time_open
+        return issues_open / total_weeks_open
 
 def github_creds():
     return requests.auth.HTTPBasicAuth(os.environ['COMM_USER'], os.environ['COMM_PASSWORD'])
