@@ -37,7 +37,6 @@ class CommunityWeekFinder:
         return date
 
     def add_event(self, issue_event):
-        #print "adding" + str(issue_event.issue_opened) + " to " + str(issue_event.issue_closed)
         opened_week_key = get_sunday_before_day(issue_event.issue_opened)
         if opened_week_key:
             self.community_week_dict[opened_week_key].issues_opened += 1
@@ -48,17 +47,15 @@ class CommunityWeekFinder:
 
     def add_latencies(self, issue_event):
         opened_week_key = get_sunday_before_day(issue_event.issue_opened)
-        closed_week_key = get_sunday_before_day(issue_event.issue_closed) or datetime.datetime.max
+        closed_week_key = get_sunday_before_day(issue_event.issue_closed) or datetime.date.max
         opened_week_index = self.community_week_dict[opened_week_key].week_index
-
 
         if opened_week_key:
             week_key = opened_week_key
-            while (self.community_week_dict[week_key] and week_key <= closed_week_key):
+            while (week_key in self.community_week_dict and week_key <= closed_week_key):
                 current_week = self.community_week_dict[week_key]
                 current_week.issues_open += 1
                 current_week.total_weeks_open += current_week.week_index - opened_week_index
-
                 week_key = week_key + datetime.timedelta(days=+7)
 
 class CommunityWeek:
@@ -81,11 +78,8 @@ class CommunityWeek:
         total_weeks_open = 0
         self.week_index = week_index
 
-    def contains_date(date):
-        return date >= start_date and date < end_date
-
-    def average_issue_age():
-        return issues_open / total_weeks_open
+    def average_issue_age(self):
+        return float(self.total_weeks_open) / float(self.issues_open)
 
 def github_creds():
     return requests.auth.HTTPBasicAuth(os.environ['COMM_USER'], os.environ['COMM_PASSWORD'])
@@ -95,7 +89,6 @@ def fetch_issue_events(owner, repo, interval):
     req = requests.get(('https://api.github.com/repos/%(owner)s/%(repo)s/issues?sort:created_at&order=asc&state=all' % locals()), auth=github_creds())
     issue_array = json.loads(req.text)
     while ('next' in req.links and 'url' in req.links['next']):
-        print req.links['next']['url']
         req = requests.get(req.links['next']['url'], auth=github_creds())
         issue_array += json.loads(req.text)
         if not ('next' in req.links and 'url' in req.links['next']):
@@ -125,7 +118,7 @@ def get_date(community_week):
 
 events = fetch_issue_events(owner, repo, interval)
 
-end_date = get_day_for_date('2016-12-31T02:44:41Z') + relativedelta(weekday=SU(+2))
+end_date = datetime.date.today() + relativedelta(weekday=SU(+1))
 
 start_date = events[-1].issue_opened + relativedelta(weekday=SU(-1))
 
@@ -137,21 +130,25 @@ map(week_finder.add_event, events)
 
 velocities = open('point_velocities.csv', 'w')
 velocities.truncate()
+velocities.write('week,opened,closed\n')
 
 still_open = open('still_open.csv', 'w')
 still_open.truncate()
+still_open.write('week,still_opened\n')
 
 burnup = open('burnup.csv', 'w')
 burnup.truncate()
+burnup.write('week,opened,closed\n')
+
+
+average_issue_latency = open('average_issue_latency.csv', 'w')
+average_issue_latency.truncate()
+average_issue_latency.write('week,average_issue_latency\n')
 
 week_index = 0
 total_opened = 0
 total_closed = 0
 difference = 0
-
-velocities.write('week,opened,closed\n')
-still_open.write('week,still_opened\n')
-burnup.write('week,opened,closed\n')
 
 for week in sorted(week_finder.community_week_dict.values(), key=get_date):
     total_opened += week.issues_opened
@@ -161,6 +158,7 @@ for week in sorted(week_finder.community_week_dict.values(), key=get_date):
     velocities.write(str(week_index) + ',' + str(week.issues_opened) + ','+ str(week.issues_closed) + '\n')
     still_open.write(str(week_index) + ',' + str(difference) + '\n')
     burnup.write(str(week_index) + ',' + str(total_opened) + ',' + str(total_closed) + '\n')
+    average_issue_latency.write(str(week_index) + ',' + str(week.average_issue_age()) + '\n')
     week_index += 1
 
 #aggregated statistics
@@ -173,8 +171,7 @@ week_index = 0
 opened_per_month = 0
 closed_per_month = 0
 
-
-burnup.write('month,opened,closed\n')
+month_velocities.write('month,opened,closed\n')
 
 for week in sorted(week_finder.community_week_dict.values(), key=get_date):
     opened_per_month += week.issues_opened
