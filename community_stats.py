@@ -6,51 +6,16 @@ import sys
 import json
 import os
 from community_week import CommunityWeekFinder, CommunityWeek
+from issue_events import IssueEvents, IssueEventsFetcher
 
 owner = sys.argv[1]
 repo = sys.argv[2]
 interval = 7
 
-class IssueEvents:
-    issue_opened = 0
-    issue_closed = 0
-
-    def __init__(self, issue_opened, issue_closed):
-        self.issue_opened = issue_opened
-        self.issue_closed = issue_closed
-
-def github_creds():
-    return requests.auth.HTTPBasicAuth(os.environ['COMM_USER'], os.environ['COMM_PASSWORD'])
-
-
-def fetch_issue_events(owner, repo, interval):
-    req = requests.get(('https://api.github.com/repos/%(owner)s/%(repo)s/issues?sort:created_at&order=asc&state=all' % locals()), auth=github_creds())
-    issue_array = json.loads(req.text)
-    while ('next' in req.links and 'url' in req.links['next']):
-        req = requests.get(req.links['next']['url'], auth=github_creds())
-        issue_array += json.loads(req.text)
-        if not ('next' in req.links and 'url' in req.links['next']):
-            break
-    return map(get_events, issue_array)
-
-def get_events(issue):
-    events = IssueEvents(get_day_for_date(issue['created_at']), get_day_for_date(issue['closed_at']))
-    return events
-
-
-def get_day_for_date(date_string):
-    if date_string is None:
-        return None
-    raw_date = parse(date_string)
-    day = datetime.date(year=raw_date.year,
-                        month=raw_date.month,
-                        day=raw_date.day)
-    return day
-
 def get_date(community_week):
     return community_week.start_date
 
-events = fetch_issue_events(owner, repo, interval)
+events = IssueEventsFetcher.fetch_issue_events(owner, repo, interval)
 
 end_date = datetime.date.today() + relativedelta(weekday=SU(+1))
 
