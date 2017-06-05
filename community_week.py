@@ -1,10 +1,5 @@
 from dateutil.relativedelta import *
-from dateutil.parser import *
 import datetime
-import requests
-import sys
-import json
-import os
 
 class CommunityWeekFinder:
     start_date = 0

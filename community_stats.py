@@ -1,19 +1,12 @@
 from dateutil.relativedelta import *
-from dateutil.parser import *
 import datetime
-import requests
 import sys
-import json
-import os
 from community_week import CommunityWeekFinder, CommunityWeek
 from issue_events import IssueEvents, IssueEventsFetcher
 
 owner = sys.argv[1]
 repo = sys.argv[2]
 interval = 7
-
-def get_date(community_week):
-    return community_week.start_date
 
 events = IssueEventsFetcher.fetch_issue_events(owner, repo, interval)
 
@@ -26,6 +19,9 @@ week_finder = CommunityWeekFinder(start_date, end_date)
 map(week_finder.add_event, events)
 
 #unaggregated statistics
+
+def get_date(community_week):
+    return community_week.start_date
 
 velocities = open('point_velocities.csv', 'w')
 velocities.truncate()

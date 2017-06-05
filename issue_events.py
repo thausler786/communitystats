@@ -1,12 +1,8 @@
-
-from dateutil.relativedelta import *
 from dateutil.parser import *
 import datetime
 import requests
-import sys
 import json
 import os
-from community_week import CommunityWeekFinder, CommunityWeek
 
 class IssueEvents:
     issue_opened = 0
